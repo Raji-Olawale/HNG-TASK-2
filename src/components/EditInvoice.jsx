@@ -3,8 +3,9 @@ import { useLoaderData, useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { updateInvoice } from "/src/store/invoiceSlice";
 
-const EditInvoice = () => {
-  const { invoice } = useLoaderData();
+const EditInvoice = ({ invoice: propInvoice, onCancel, onSave }) => {
+  const loaderData = useLoaderData();
+  const invoice = propInvoice || loaderData?.invoice;
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
@@ -48,12 +49,24 @@ const EditInvoice = () => {
     setFormData({ ...formData, items: newItems });
   };
 
-  const handleCancel = () => {
-    navigate(`/invoice/${invoice.id}`);
+const handleCancel = () => {
+    navigate(-1);
   };
 
-  const handleFieldChange = (field, value) => {
-    setFormData({ ...formData, [field]: value });
+  const formatDateForInput = (dateStr) => {
+    if (!dateStr) return "";
+    const date = new Date(dateStr);
+    return date.toISOString().split("T")[0];
+  };
+
+  const parseDateFromInput = (dateStr) => {
+    if (!dateStr) return "";
+    const date = new Date(dateStr);
+    return date.toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
   };
 
   const calculateTotals = useCallback(() => {
@@ -135,7 +148,11 @@ const EditInvoice = () => {
           },
         }),
       );
-      navigate(`/invoice/${invoice.id}`);
+      if (onSave) {
+        onSave();
+      } else {
+        navigate(`/invoice/${invoice.id}`);
+      }
     } catch (error) {
       console.error("Update failed:", error);
       setErrors({ general: "Failed to save changes. Please try again." });
@@ -294,8 +311,13 @@ const EditInvoice = () => {
             <label className="text-[#7e88c3] text-xs mb-2">Invoice Date</label>
             <input
               type="date"
-              value={formData.invoiceDate}
-              onChange={(e) => handleFieldChange("invoiceDate", e.target.value)}
+              value={formatDateForInput(formData.invoiceDate)}
+              onChange={(e) =>
+                handleFieldChange(
+                  "invoiceDate",
+                  parseDateFromInput(e.target.value),
+                )
+              }
               className="w-full px-4 py-3.5 rounded border border-purple-200 text-sm font-bold text-gray-900 outline-none transition-colors focus:border-purple-500 focus:ring-2 focus:ring-purple-100 bg-white"
             />
           </div>
